@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Exchange</title>
+	<link rel="stylesheet" href="/css/bootstrap.min.css" />
+</head>
+<body class="bg-light">
+	<div class="container">
+    <div class="header clearfix">
+      <nav class="navbar">
+        <h1 class="text-muted">Exchange</h1>
+        <ul class="nav justify-content-end">
+          {{#if user}}
+            <li class="nav-item">
+              <a class="nav-link" >Logged in as <b>{{user.name}} {{user.surname}}</b></a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#" data-toggle="modal" data-target="#profileModal" >Profile</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/users/logout">Logout</a>
+            </li>
+          {{else}}
+            <li class="nav-item">
+              <a class="nav-link" href="/users/login">Login</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/users/register">Register</a>
+            </li>
+          {{/if}}
+        </ul>
+      </nav>
+    </div>
+    <div class="row">
+      <div class="col-lg-12">
+        {{#if success_msg}}
+          <div class="alert alert-success">{{success_msg}}</div>
+        {{/if}}
+        {{#if error_msg}}
+          <div class="alert alert-danger">{{error_msg}}</div>
+        {{/if}}
+        {{#if error}}
+          <div class="alert alert-danger">{{error}}</div>
+        {{/if}}
+        {{{body}}}
+      </div>
+    </div>
+    <footer class="footer">
+      <p>&copy; 2018 Exchange</p>
+    </footer>
+  </div>
+</body>
+{{#if user}}
+  <script src="/js/socket.io.js"></script>
+  <script src="/js/jquery-3.3.1.min.js"></script>
+  <script src="/js/bootstrap.min.js"></script>
+  <script src="/js/Chart.bundle.min.js"></script>
+
+  <script>
+    var initData = 0;
+    var socket = io.connect(window.location.hostname);
+    var currenciesData;
+    var averageData;
+    var walletAmount;
+    var averageChartLabel = [];
+    var averageChartAveragePrice = [];
+    socket.on('WsError', function () {
+      $.each($('tr#currenciesData'),function() {
+        $(this).find('#buyButton').attr("disabled", true);
+      });
+      $.each($('tr#walletData'),function() {
+        $(this).find('#sellButton').attr("disabled", true);
+      });
+    });
+
+    socket.on('LoadCurrency', function (data) {
+
+      currenciesData = JSON.parse(data);
+      $('#currencies_time').html('Currencies ('+currenciesData.PublicationDate+')');
+
+      $.each($('tr#currenciesData'),function( index ) {
+        $(this).find('#buyButton').attr("disabled", false);
+        $(this).find('#cSellPrice').html(currenciesData.Items[index].SellPrice);
+        $(this).find('#buyButton').attr({
+          "data-sellprice": currenciesData.Items[index].SellPrice
+        });
+      });
+
+      $.each($('tr#walletData'),function( index ) {
+        $(this).find('#sellButton').attr("disabled", false);
+        walletAmount = $(this).find('#walletAmount').html();
+        walletAmount = (walletAmount*currenciesData.Items[index].PurchasePrice)/currenciesData.Items[index].Unit;
+        $(this).find('#walletPurchasePrice').html(currenciesData.Items[index].PurchasePrice);
+        $(this).find('#walletValue').html(walletAmount.toFixed(2));
+        $(this).find('#sellButton').attr({
+          "data-purchaseprice": currenciesData.Items[index].PurchasePrice
+        });
+      });
+    });
+
+    var chartColors = ['blue', 'red', 'green', 'black', 'orange', 'purple'];
+    socket.on('LoadAverage', function (data) {
+      averageData = JSON.parse(data);
+      if(initData === 0){
+        $.each(averageData[0].Currency, function( index ) {
+          var indexCurrency = [];
+          $.each(averageData, function( index2 ) {
+            averageChartLabel[index2] = averageData[index2].PublicationDate;
+            indexCurrency.push(averageData[index2].Currency[index].AveragePrice);
+          });
+          myChart.data.datasets.push({data: indexCurrency, label: averageData[0].Currency[index].Code, borderWidth: 1,borderColor: chartColors[index], pointStyle: 'circle', borderWidth: 0.5, fill: false})
+        });
+
+        myChart.data.labels = averageChartLabel;
+        myChart.update();
+        initData = 1;
+      }
+      else if(myChart.data.labels.length === 20){
+        $.each(averageData[0].Currency, function( index ) {
+          myChart.data.datasets[index].data.shift();
+          myChart.data.datasets[index].data.push(averageData[averageData.length-1].Currency[index].AveragePrice)
+        });
+        myChart.data.labels.shift();
+        myChart.data.labels.push(averageData[averageData.length-1].PublicationDate);
+        myChart.update();
+      }
+      else{
+        $.each(averageData[0].Currency, function( index ) {
+          myChart.data.datasets[index].data.push(averageData[averageData.length-1].Currency[index].AveragePrice)
+        });
+        myChart.data.labels.push(averageData[averageData.length-1].PublicationDate);
+        myChart.update();
+      }
+    });
+
+  $('#buyModal').on('show.bs.modal', function (event) {
+    var button = $(event.relatedTarget);
+    var modal = $(this);
+    var code = button.data('code');
+    var unit = button.data('unit');
+    var sellprice = button.data('sellprice');
+    modal.find('.modal-title').text('Buying ' + code);
+    modal.find('#buyCurrencyName').val(unit);
+    modal.find('#buySellPrice').attr({
+          "value": sellprice
+    });
+    modal.find('#buyCodeName').attr({
+          "value": code.toLowerCase()
+    });
+    modal.find('#buyUnitName').attr({
+          "value": unit
+    });
+    modal.find('#buyCurrencyName').attr({
+          "step": unit,
+          "min": unit,
+          "value": ""
+    });
+  })
+
+  $('#sellModal').on('show.bs.modal', function (event) {
+    var button = $(event.relatedTarget);
+    var modal = $(this);
+    var code = button.data('code');
+    var amount = button.data('amount');
+    var unit = button.data('unit');
+    var purchaseprice = button.data('purchaseprice');
+    modal.find('.modal-title').text('Selling ' + code);
+    modal.find('#sellCurrencyName').val(unit);
+    modal.find('#sellPurchasePrice').attr({
+          "value": purchaseprice
+    });
+    modal.find('#sellCodeName').attr({
+          "value": code.toLowerCase()
+    });
+    modal.find('#sellUnitName').attr({
+          "value": unit
+    });
+    modal.find('#sellCurrencyName').attr({
+          "step": unit,
+          "max": amount,
+          "min": unit,
+    });
+  })
+
+  $('#confirmModal').on('show.bs.modal', function (event){
+    $message = $(event.relatedTarget).attr('data-message');
+    $(this).find('.modal-body p').text($message);
+    $title = $(event.relatedTarget).attr('data-title');
+    $(this).find('.modal-title').text($title);
+    var form = $(event.relatedTarget).closest('form');
+    $(this).find('.modal-footer #confirm').data('form', form);
+  });
+
+  $('#confirmModal').find('.modal-footer #confirm').on('click', function(){
+      $(this).data('form').submit();
+  });
+
+  $('#generateExchange').on('click', function(){
+    $('#myChart').attr({
+      "style": "display:block"
+    });
+    $(this).hide();
+    socket.emit('GetAverage');
+  });
+
+  $('#profileModal').on('show.bs.modal', function (){
+  });
+
+  var ctx = document.getElementById("myChart");
+  var myChart = new Chart(ctx, {
+      type: 'line',
+      options: {
+        legend: {
+          labels: {fontSize: 10}
+        },
+        scales: {
+          xAxes: [{
+            display: false,
+            type: 'category',
+            max: 20
+          }],
+          yAxes: [{
+            ticks: {
+              min: 0,
+            }
+          }]
+        },
+        elements: {
+          line: {
+            tension: 0
+          }
+        },
+        points: {
+          pointStyle: 'line'
+        }
+      }
+  });
+</script>
+{{/if}}
+</html>

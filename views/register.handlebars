@@ -1,0 +1,64 @@
+<h2 class="page-header">Register</h2>
+{{#if errors}}
+      {{#each errors}}
+        <div class="alert alert-danger">{{msg}}</div>
+      {{/each}}
+{{/if}}
+<form method="post" action="/users/register">
+   <div class="form-group">
+    <label>Login:</label>
+    <input type="text" class="form-control" placeholder="Login" name="login" required>
+  </div>
+  <div class="form-group">
+    <label>Email:</label>
+    <input type="email" class="form-control" placeholder="Email" name="email" required> 
+  </div>
+  <div class="form-group">
+    <label>Name:</label>
+    <input type="text" class="form-control" placeholder="Name" name="name" required>
+  </div>
+  <div class="form-group">
+    <label>Surname:</label>
+    <input type="text" class="form-control" placeholder="Surname" name="surname" required>
+  </div>
+  <div class="form-group">
+    <label>Password:</label>
+    <input type="password" class="form-control" placeholder="Password" name="password" required>
+  </div>
+  <div class="form-group">
+    <label>Confirm Password:</label>
+    <input type="password" class="form-control" placeholder="Password" name="password2" required>
+  </div>
+  <h2>Wallet:</h2>
+  <div class="form-row">
+    <div class="form-group col-md-1">
+      <label>PLN:</label>
+      <input type="number" class="form-control" placeholder="0" name="pln" step="1" min="0">
+    </div>
+      <div class="form-group col-md-1">
+      <label>USD:</label>
+      <input type="number" class="form-control" placeholder="0" name="usd" step="1" min="0">
+    </div>
+    <div class="form-group col-md-1">
+      <label>EUR:</label>
+      <input type="number" class="form-control" placeholder="0" name="eur" step="1" min="0">
+    </div>
+    <div class="form-group col-md-1">
+      <label>CHF:</label>
+      <input type="number" class="form-control" placeholder="0" name="chf" step="1" min="0">
+    </div>
+    <div class="form-group col-md-1">
+      <label>RUB:</label>
+      <input type="number" class="form-control" placeholder="0" name="rub" step="100" min="0">
+    </div>
+    <div class="form-group col-md-1">
+      <label>CZK:</label>
+      <input type="number" class="form-control" placeholder="0" name="czk" step="100" min="0">
+    </div>
+    <div class="form-group col-md-1">
+      <label>GBP:</label>
+      <input type="number" class="form-control" placeholder="0" name="gbp" step="1" min="0">
+    </div>
+  </div>
+  <button type="submit" class="btn btn-default">Submit</button>
+</form>
